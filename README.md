@@ -54,7 +54,7 @@ The code includes benchmark cases and plotting routines to reproduce figures fro
 
 ## Example Results
 
-### Analytical vs Numerical Solutions  
+### Expansion of aquifer in cold firn: Analytical vs Numerical Solutions
 ![Analytical vs Numerical](./Figures/Cover_photo/analyticalvsnumerical.png)
 
 ### 3D Aquifer Expansion in Cold Firn  
