@@ -2,7 +2,7 @@
 
 ## Overview
 
-This project develops a **vertically integrated model** that captures the coupled **phase change and flow dynamics** governing meltwater migration in **cold firn**—the transitional snow–ice layer on glaciers and ice sheets.
+This project develops a **vertically integrated model** that captures the coupled **phase change and flow dynamics** governing meltwater migration in **cold firn**, the sintered and compacted snow on glaciers and ice sheets.
 
 The model bridges the physics of **gravity-driven saturated flow in soils** with **meltwater percolation and refreezing in firn**, offering a unified theoretical framework for hydrologic processes across temperate and polar environments. Unlike traditional approaches, this model explicitly includes **latent heat effects**, **porosity evolution**, and **residual liquid trapping**.
 
