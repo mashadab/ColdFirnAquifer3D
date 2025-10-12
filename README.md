@@ -35,14 +35,8 @@ If you use this code or data, please cite:
 ## Getting Started
 
 ### Quick Usage
-After cloning the repository and installing the required Python libraries, the main scripts can be executed directly:
-
-- `main_vertical_model.m` — Runs the 1D vertically integrated firn aquifer simulation.  
-- `analytical_solution.m` — Computes the analytical solution for constant-volume aquifers.  
-- `compare_analytical_numerical.m` — Validates the numerical model against analytical benchmarks.  
-- `aquifer_3D_expansion.m` — Demonstrates three-dimensional aquifer evolution in heterogeneous firn.  
-
-All figures will be saved automatically in the `\Figures` directory, and output MATLAB data will be stored in the `\Output` folder.
+After cloning the repository and installing the required Python libraries, the main scripts can be executed directly in the `\src\Figure.py`
+All figures will be saved automatically in the `\Figures` directory.
 
 ---
 
