@@ -35,7 +35,7 @@ If you use this code or data, please cite:
 ## Getting Started
 
 ### Quick Usage
-After cloning the repository and installing the required MATLAB libraries, the main scripts can be executed directly:
+After cloning the repository and installing the required Python libraries, the main scripts can be executed directly:
 
 - `main_vertical_model.m` — Runs the 1D vertically integrated firn aquifer simulation.  
 - `analytical_solution.m` — Computes the analytical solution for constant-volume aquifers.  
