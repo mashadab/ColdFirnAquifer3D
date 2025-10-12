@@ -6,7 +6,6 @@ This project develops a **vertically integrated model** that captures the couple
 
 The model bridges the physics of **gravity-driven saturated flow in soils** with **meltwater percolation and refreezing in firn**, offering a unified theoretical framework for hydrologic processes across temperate and polar environments. Unlike traditional approaches, this model explicitly includes **latent heat effects**, **porosity evolution**, and **residual liquid trapping**.
 
-Our analytical and numerical results reveal that aquifer expansion in firn **slows at lower temperatures** due to enhanced refreezing and porosity loss. These results provide new physical insights into **firn aquifer formation and evolution**, helping to better quantify **surface mass loss and meltwater retention** that affect global sea level rise.
 
 ---
 
