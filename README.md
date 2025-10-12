@@ -29,7 +29,7 @@ Our analytical and numerical results reveal that aquifer expansion in firn **slo
 
 ## Citation
 If you use this code or data, please cite:  
-**Shadab, M.A., Stone, H.A., and Maxwell, R.M. (2025).** *A vertically integrated model with phase change for aquifers in cold firn* (under review).
+**Shadab, M.A., Stone, H.A., and Maxwell, R.M. (202X).** *A vertically integrated model with phase change for aquifers in cold firn* (under review).
 
 ---
 
