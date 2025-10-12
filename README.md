@@ -54,8 +54,9 @@ The code includes benchmark cases and plotting routines to reproduce figures fro
 
 ## Example Results
 
-### Expansion of aquifer in cold firn: Analytical vs Numerical Solutions
+### Expansion of aquifer in cold firn: Analytical (Ana) vs Numerical (Num) Solutions
 ![Analytical vs Numerical](./Figures/Cover_photo/analyticalvsnumerical.png)
+Expansion of an aquifer in a uniform, cold firn outside the aquifer with initial temperature and 70% porosity. (a) Numerical (Num) and analytical (Ana) solutions to the dimensional aquifer height at different times. Evolution of dimensionless (b) maximum height, (c) maximum length, and (d) volume of liquid water in the aquifer, scaled with respect their initial values at time (subscript 0 refers to the initial values). Analytical solutions agree with the numerical solution of the vertically integrated model.
 
 ### 3D Aquifer Expansion in Cold Firn  
 ![3D Aquifer Expansion](./Figures/Aquifer_3D_Expansion.png)
