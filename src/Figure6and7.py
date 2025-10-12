@@ -1,0 +1,774 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+Created on Thu Apr 28 12:09:06 2022
+
+@author: afzal-admin
+"""
+
+#Coding the unconfined aquifer with constant porosity in firn
+#Mohammad Afzal Shadabred
+#Date modified: 04/28/2022
+
+import sys
+sys.path.insert(1, '../../solver')
+
+# import personal libraries and class
+from classes import *    
+
+from build_gridfun2D import build_grid
+from build_opsfun2D_optimized import build_ops
+from comp_mean_matrix import comp_mean_matrix
+from solve_lbvpfun_optimized import solve_lbvp
+from build_bndfun_optimized import build_bnd
+from comp_fluxfun import comp_flux
+from flux_upwindfun2D_optimized import flux_upwind
+from random_correlated_fields import GeneratePermField,GeneratePermField2D,GeneratePermField2D_papers, GeneratePermField2D_new
+
+
+##Simulation parameters
+simulation_name ='vertically-integrated-model-cold-firn-corr_2D'
+L = 1000   #Length of the glacier (m)
+tmax = 10*365.25*day2s #10 years max #Maximum time (s)
+deg2rad = np.pi/180
+
+##Problem parameters
+R = 0#0.048/day2s #Recharge (m/s)
+tilt_angle = 0   #angle of the slope (degrees)
+h_top = 10; x_right = 100  #Top and right of the melted firn, to set initial condition (m)
+n = 3       #Power law exponent porosity permeabity relation
+Delta_rho = 1e3 #Density difference between water and gas (kg/m^3) 
+k0 = 5.6e-11#absolute permeability m^2 in pore space Meyer and Hewitt 2017
+mu = 1e-3   #Viscosity of water (Pa.s)
+g  = 9.808  #Acceleration due to gravity (m/s^2)
+phi_orig = 0.7  #Porosity of the firn/snow
+
+
+corr_rnd_field = 'yes' #yes or no
+
+############################################################
+#new code (cold firn aquifer)
+############################################################
+T  = -50 # Temperature of the aquifer [C]
+T_right = 0 #temperature
+
+Nt = 50000    #Total number of time steps
+dt = tmax/Nt #Length of time step (s)
+
+
+############################################################
+
+##Build grid and operator
+Grid.xmin = 0; Grid.xmax = L; Grid.Nx = 100
+Grid.ymin = 0; Grid.ymax = L; Grid.Ny = 100
+
+Grid    = build_grid(Grid)
+[D,G,I] = build_ops(Grid) 
+M       = comp_mean_matrix(Grid)
+Xc,Yc   = np.meshgrid(Grid.xc,Grid.yc)
+Xc_col  = np.reshape(np.transpose(Xc), (Grid.N,-1))    #building the single X vector
+Yc_col  = np.reshape(np.transpose(Yc), (Grid.N,-1))    #building the single Y vector
+
+##Boundary conditions
+#Fixed head at right BC
+BC.dof_dir   = Grid.dof_xmin
+BC.dof_f_dir = Grid.dof_f_xmin
+BC.g         = 10*np.ones((Grid.Ny,1))
+
+#No flow at left BC
+BC.dof_neu   = Grid.dof_xmax
+BC.dof_f_neu = Grid.dof_f_xmax
+BC.qb        = 0*np.ones((Grid.Ny,1))
+
+v = np.ones((Grid.Nf,1)) #Velocity for upwind
+v[Grid.Nfx:] = 0 #Zero-velocity in y-direction
+A = flux_upwind(v,Grid) #Same flux always advection due to slopee
+
+####################
+if corr_rnd_field == 'yes':
+    ############################################
+    
+    #Permeability field
+    corr_length = 10; K_mean = 0 ; amplitude = 0.1;s = 25061977 #in m
+    factor_x = 1; factor_y = 1e1;
+    
+    [K,Xc,Yc] = GeneratePermField2D_new(Grid,factor_x*corr_length,factor_y*corr_length,amplitude,K_mean,'exp',s)
+    
+    K = 10**(-K)
+    
+    K = np.reshape(np.transpose(K), (Grid.N,-1))/np.max(K)
+    phi_normalized = K**(1/n) #Normalize porosity with respect to maximum value in correlated random field
+    
+    #Plot porosity
+    phi_array = phi_orig*phi_normalized
+    
+    #Plot porosity
+    fig = plt.figure(figsize=(8,6),dpi=200)
+    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(phi_array.reshape(Grid.Ny,Grid.Nx)),cmap="Greys_r",levels=100)]
+    plt.xlabel(r'$x$ [km]')
+    plt.ylabel(r'$y$ [km]')
+    plt.xlim([Grid.xmin/1e3, Grid.xmax/1e3])
+    plt.ylim([Grid.ymin/1e3,Grid.ymax/1e3])
+    plt.axis('scaled')
+    plt.xticks([0,0.25,0.5,0.75,1])
+    plt.yticks([0,0.25,0.5,0.75,1])
+    clb = plt.colorbar(cmap='coolwarm')
+    clb.set_label(r'$\phi$', labelpad=1, y=1.08, rotation=0)
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    plt.savefig(f'../Figures/VIM_correlated_fields_{Grid.Nx}by{Grid.Ny}_Marcs-logK_fcorr_x{factor_x}m_amp{amplitude}_norm.pdf',bbox_inches='tight', dpi = 200)
+    
+    
+    #temperature
+    T_array = (T + (T - T_right)/(Grid.xmin - Grid.xmax)*Xc_col) #Temperature array
+    fig = plt.figure(figsize=(8,6),dpi=200)
+    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(T_array.reshape(Grid.Ny,Grid.Nx)),cmap="Reds_r",levels=100)]
+    plt.xlabel(r'$x$ [km]')
+    plt.ylabel(r'$y$ [km]')
+    plt.xlim([Grid.xmin/1e3, Grid.xmax/1e3])
+    plt.ylim([Grid.ymin/1e3,Grid.ymax/1e3])
+    plt.axis('scaled')
+    plt.xticks([0,0.25,0.5,0.75,1])
+    plt.yticks([0,0.25,0.5,0.75,1])
+    clb = plt.colorbar(cmap='coolwarm')
+    clb.set_label(r'T [$^o$C]', labelpad=1, y=1.08, rotation=0)
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    plt.savefig(f'../Figures/VIM_Temp.pdf',bbox_inches='tight', dpi = 200)
+        
+
+    #Plot porosity reduction
+    Delta_phi = 0.0058*(1-phi_array) * (0 -T_array)  #calculating refrozen water (From Clark et al.,2017)
+    phi0 = phi_array - Delta_phi
+
+    fig = plt.figure(figsize=(8,6),dpi=200)
+    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(Delta_phi.reshape(Grid.Ny,Grid.Nx)),cmap="Greys",levels=100)]
+    plt.xlabel(r'$x$ [km]')
+    plt.ylabel(r'$y$ [km]')
+    plt.xlim([Grid.xmin/1e3, Grid.xmax/1e3])
+    plt.ylim([Grid.ymin/1e3,Grid.ymax/1e3])
+    plt.axis('scaled')
+    #mm = plt.cm.ScalarMappable(cmap=cm.coolwarm)
+    #mm.set_array(phi)
+    clb = plt.colorbar(cmap='coolwarm')
+    plt.xticks([0,0.25,0.5,0.75,1])
+    plt.yticks([0,0.25,0.5,0.75,1])
+    clb.set_label(r'$\Delta \phi$', labelpad=1, y=1.08, rotation=0)
+    plt.tight_layout(pad=0.5, w_pad=0.5, h_pad=1.0)
+    plt.savefig(f'../Figures/VIM_correlated_fields_{Grid.Nx}by{Grid.Ny}_Marcs-logK_fcorr_x{factor_x}m_amp{amplitude}_norm_reduction.pdf',bbox_inches='tight', dpi = 200)
+    
+    
+    simulation_name = simulation_name+f'VIM_corr{corr_rnd_field}_lx{factor_x}m_ly{factor_y}m_amp{amplitude}'
+    
+    ###################################################################################
+####################
+
+
+S  = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
+S1 = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
+S2 = phi0**(n)*Delta_rho*g*k0/(mu*(phi0+Delta_phi))  #Constant in constant porosity model (Huppert and Woods, 1994)
+
+
+kappabykappa1 = S2/S1 #the kappa ratio
+
+print('The kappa ratio is kappa/kappa1 = ',kappabykappa1)
+
+def S_func(dhdt):
+    S = (1-np.heaviside(dhdt,0))*S1 + np.heaviside(dhdt,0)*S2
+    S = spdiags(np.transpose(S), [0], Grid.N, Grid.N)
+    return S
+
+
+##Operators
+IM = I
+#EX = lambda dt, h: I + dt*S*np.cos(deg2rad*tilt_angle)*D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+#                     - dt*S*np.sin(deg2rad*tilt_angle)*D@A
+##########################################################################################
+EX = lambda dt, h, dhdt_ind: I + dt*np.cos(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+                               - dt*np.sin(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@A    
+##########################################################################################                     
+R  = R*np.ones((Grid.N,1))
+#Kd = S*phi0*sp.eye(Grid.Nf)
+
+##Initial condition
+h = np.zeros((Grid.N,1))
+#h[Xc_col<x_right] = h_top #10m high
+#h[Xc_col**2 + Yc_col**2<x_right**2] = h_top #10m high
+
+
+#Storage arrays
+h_sol = np.copy(h)
+t     = [0]
+time  =  0
+h_max = [np.max(h)]
+r_max = [x_right]
+
+for i in range(0,Nt):
+
+    # q = comp_flux(D, Kd, G, h, R, Grid, BC)
+
+    [B,N,fn] = build_bnd(BC, Grid, I)
+    #h = solve_lbvp(IM, EX(dt,h) @ h + dt*(R +fn), B, BC.g, N)
+    ##########################################################################################  
+    dhdt_ind = -np.ones_like(h)
+    h_dummy  = solve_lbvp(IM, EX(dt,h,dhdt_ind) @ h + dt*(R +fn), B, BC.g, N)
+    dhdt_ind = np.sign(h_dummy - h)
+    #print('hi')
+    h = solve_lbvp(IM, EX(dt,h,dhdt_ind) @ h + dt*(R +fn), B, BC.g, N)    
+                         
+    ##########################################################################################    
+    
+    time = time+dt
+    
+    if (i+1)%(Nt/500)==0:
+        print(i+1,time/day2s, 'days')
+        t = np.append(t,time)
+        h_sol = np.hstack([h_sol,h])
+
+        ##########################################################################################          
+        #maximum values for analysis
+        arr = h[0:Grid.N-1:Grid.Ny]>1e-6
+        r_max = np.append(r_max,np.max(Grid.xc[arr[:,0]]))
+        h_max = np.append(h_max,np.max(h))                       
+        ##########################################################################################  
+
+
+######################################################################
+#Saving the data
+######################################################################
+np.savez(f'{simulation_name}_{Grid.Nx}by{Grid.Ny}_T{T}C.npz', t=t,h_sol=h_sol,r_max=r_max,h_max=h_max)
+
+plt.figure(figsize=(10,10),dpi=100)
+plt.fill_between(Grid.xc/1e3, np.transpose(h_sol[:,-1].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue, y2=0)
+plt.ylabel(r'$h$ [m]')
+plt.xlabel(r'$x$ [m]')
+plt.tight_layout()
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h.pdf',bbox_inches='tight', dpi = 600)
+
+
+#Analytic solution
+if tilt_angle ==0:
+    Q_0  =  h_top*x_right*phi0 #Volume per unit depth of water (but only half is required)
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad)
+else:    
+    Q_0  =  h_top*x_right*phi0/2 #Volume per unit depth of water (but only half is required)
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad) +x_right/2
+xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
+xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
+f0   =  lambda xi,xi_0: (xi_0**2 - xi**2)/6  #Only for gamma = 0 
+h_func    =  lambda t,xi,phi_0 : (Q_0**2/(S*np.cos(tilt_angle*deg2rad)*t))**(1/3) * f0(xi,xi_0(phi_0))
+
+
+
+'''
+#New Contour plot with analytical
+fps = 100000 # frame per sec
+#frn = endstop # frame number of the animation
+[N,frn] = np.shape(h_sol) # frame number of the animation from the saved file
+tday = t/day2s
+xi   = np.linspace(-xi_0(phi0),xi_0(phi0),1000)
+def update_plot(frame_number, zarray, plot,t):
+    plt.clf()
+    plt.xlabel(r'$x$ [km]')
+    plt.ylabel(r'$h$ [m]')
+    plt.xlim([Grid.xmin, Grid.xmax/1e3])
+    plt.ylim([0, np.max(h_sol)])
+    plot[0] = plt.fill_between(Grid.xc/1e3, np.transpose(zarray[:,frame_number].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue, y2=0)
+    plt.plot(x(t[frame_number]*day2s,xi)/1e3,h_func(t[frame_number]*day2s,xi,phi0),'r-')
+    plt.title("t= %0.2f days" % tday[frame_number],loc = 'center', fontsize=18)
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+
+fig = plt.figure(figsize=(10,10) , dpi=100)
+plt.xlabel(r'$x$ [km]')
+plt.ylabel(r'$h$ [m]')
+plt.xlim([Grid.xmin, Grid.xmax/1e3])
+plt.ylim([0, np.max(h_sol)])
+plot = [plt.fill_between(Grid.xc/1e3, np.transpose(h_sol[:,0].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue, y2=0)]
+plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
+plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
+
+ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}.mov", writer='ffmpeg', fps=30)
+'''
+
+
+'''
+#New Contour plot
+fps = 100000 # frame per sec
+#frn = endstop # frame number of the animation
+[N,frn] = np.shape(h_sol) # frame number of the animation from the saved file
+tday = t/day2s
+def update_plot(frame_number, zarray, plot,t):
+    plt.clf()
+    plt.xlabel(r'$x$ [km]')
+    plt.ylabel(r'$h$ [m]')
+    plt.xlim([Grid.xmin, Grid.xmax/1e3])
+    plt.ylim([0, np.max(h_sol)])
+    plot[0] = plt.fill_between(Grid.xc/1e3, np.transpose(zarray[:,frame_number].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue, y2=0)
+    plt.title("t= %0.2f days" % tday[frame_number],loc = 'center', fontsize=18)
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+
+fig = plt.figure(figsize=(10,10) , dpi=100)
+plt.xlabel(r'$x$ [km]')
+plt.ylabel(r'$h$ [m]')
+plt.xlim([Grid.xmin, Grid.xmax/1e3])
+plt.ylim([0, np.max(h_sol)])
+plot = [plt.fill_between(Grid.xc/1e3, np.transpose(h_sol[:,0].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue, y2=0)]
+plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
+plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
+
+ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
+'''
+
+
+
+
+#plt.plot(t/yr2s,r_max,'ro')
+
+indices = 70
+tlog = np.log(t[1:])
+th_dimless = np.log(h_max[1:]/h_max[0])
+tr_dimless = np.log(r_max[1:]/r_max[0])
+# Perform linear fit
+coefficients = np.polyfit(tlog[indices:], tr_dimless[indices:], 1)
+m_r = coefficients[0]
+b_r = coefficients[1]
+
+print("Slope (m):", m_r)
+print("Y-intercept (b):", b_r)
+
+# Perform linear fit
+coefficients = np.polyfit(tlog[indices:], th_dimless[indices:], 1)
+m_h = coefficients[0]
+b_h = coefficients[1]
+
+print("Slope (m):", m_h)
+print("Y-intercept (b):", b_h)
+
+plt.figure()
+plt.plot(np.log(t),np.log(r_max/r_max[0]),'r.')
+
+
+
+red    = [190/255 ,30/255 ,45/255 ]
+blue   = [ 30/255 ,144/255 , 255/255 ]
+
+fig, axes = plt.subplots(nrows=2, ncols=1, sharex=True, figsize=(8,8))
+plt.subplot(2,1,1)
+#plt.loglog(t,h_max_analy,'r-',linewidth=3)
+plt.plot(tlog,th_dimless,'bo',linewidth=10,label='Simulation',color=blue,mfc='none',markersize=10)
+plt.plot(tlog, tlog*m_h + b_h,'r-',linewidth=3,label=r'Fit, $\alpha=$%0.3f'%(-m_h),color=red,alpha=0.75)
+plt.ylabel(r'$log[h_{max}/h_{max}(t=0)]$')
+#plt.ylim([-0.6,0.05])
+plt.legend(loc='best',framealpha=0.0)
+#plt.axis('scaled')
+
+plt.subplot(2,1,2)
+#plt.loglog(t,x_max_analy,'r-',linewidth=3)
+plt.plot(tlog,tr_dimless,'bo',linewidth=10,label='Simulation',color=blue,mfc='none',markersize=10)
+plt.plot(tlog, tlog*m_r + b_r,'r-',linewidth=3,label=r'Fit, $\beta=$%0.3f'%(m_r),color=red,alpha=0.75)
+plt.xlabel(r'$t$')
+plt.ylabel(r'$log[r_{max}/r_{max}(t=0)]$')
+#manager = plt.get_current_fig_manager()
+#manager.window.showMaximized()
+#clb = fig.colorbar(plot[0], orientation='horizontal',aspect=50, pad=-0.1)
+#clb = fig.colorbar(plot[0], orientation='vertical',aspect=50, pad=-0.1)
+plt.xlabel(r'log t [log days]')
+#plt.axis('scaled')
+#plt.ylim([-0.1,0.7])
+plt.tight_layout()
+plt.legend(loc='best',framealpha=0.0)
+#plt.xlim([Grid.xmin, 10])
+plt.savefig(f'../Figures/max_length_height_mound_cold_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+
+
+
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10,8))
+plt.subplot(2,2,1)
+#plt.loglog(t,h_max_analy,'r-',linewidth=3)
+plt.plot(t,h_max,'b-',linewidth=5,label='$T=%0.0f ^oC$'%(T),color=blue,mfc='none',markersize=10)
+plt.ylabel(r'$h_{max} [m]$')
+#plt.ylim([-0.6,0.05])
+plt.legend(loc='best',framealpha=0.0)
+#plt.axis('scaled')
+
+plt.subplot(2,2,2)
+#plt.loglog(t,x_max_analy,'r-',linewidth=3)
+plt.plot(t,r_max,'b-',linewidth=5,label='Simulation',color=blue,mfc='none',markersize=10)
+plt.xlabel(r'$t [s]$')
+plt.ylabel(r'$r_{max}$ [m]')
+#manager = plt.get_current_fig_manager()
+#manager.window.showMaximized()
+#clb = fig.colorbar(plot[0], orientation='horizontal',aspect=50, pad=-0.1)
+#clb = fig.colorbar(plot[0], orientation='vertical',aspect=50, pad=-0.1)
+plt.xlabel(r't [s]')
+#plt.axis('scaled')
+#plt.ylim([-0.1,0.7])
+#plt.legend(loc='best',framealpha=0.0)
+
+
+plt.subplot(2,2,3)
+Vol = np.sum(h_sol,0)*Grid.dx*phi0*Grid.dy
+#plt.loglog(t,x_max_analy,'r-',linewidth=3)
+plt.plot(t,Vol,'b-',linewidth=5,label='Simulation',color=blue,mfc='none',markersize=10)
+plt.xlabel(r'$t [s]$')
+plt.ylabel(r'$Q_{max} [m^3]$')
+#manager = plt.get_current_fig_manager()
+#manager.window.showMaximized()
+#clb = fig.colorbar(plot[0], orientation='horizontal',aspect=50, pad=-0.1)
+#clb = fig.colorbar(plot[0], orientation='vertical',aspect=50, pad=-0.1)
+plt.xlabel(r't [s]')
+#plt.axis('scaled')
+#plt.ylim([-0.1,0.7])
+#plt.legend(loc='best',framealpha=0.0)
+#plt.xlim([Grid.xmin, 10])
+plt.subplots_adjust(wspace=0.0, hspace=0)
+plt.tight_layout()
+plt.savefig(f'../Figures/max_length_height_mound_cold_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+
+
+plt.subplots_adjust(wspace=0.0, hspace=0)
+plt.tight_layout()
+plt.savefig(f'../Figures/max_length_height_mound_cold_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+
+
+
+######################################################################
+#Saving the data
+######################################################################
+np.savez(f'{simulation_name}_{Grid.Nx}by{Grid.Ny}_T{T}C.npz', t=t,h_sol=h_sol,r_max=r_max,h_max=h_max,dx = Grid.dx,Vol=Vol)
+
+
+
+######################################################################
+#for loading data
+######################################################################
+data = np.load(f'{simulation_name}_{Grid.Nx}by{Grid.Ny}_T{T}C.npz')
+t=data['t']
+h_sol =data['h_sol']
+r_max =data['r_max']
+h_max =data['h_max']
+
+
+
+plt.figure(figsize=(10,4),dpi=100)
+Num = 6
+for i in np.linspace(0,np.shape(h_sol)[1]-1,Num).round().astype(int):
+    if i >0:
+        plt.plot(Grid.xc/1e3, np.transpose(h_sol[:,i].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue,linewidth=5,alpha=((i+10)/(np.shape(h_sol)[1]-1+20)),label=r'%0.1f yrs'%(t[i]/yr2s))
+plt.ylabel(r'$h$ [m]')
+plt.xlabel(r'$x$ [m]')
+plt.tight_layout()
+plt.legend(loc='best',ncol=3)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+
+
+
+plt.figure(figsize=(10,4),dpi=100)
+t_arr = (np.array([0, 10, 50, 100])).astype(int)
+#for i in np.linspace(0,np.shape(h_sol)[1]-1,Num).round().astype(int):
+for i in t_arr:
+    ii = np.argwhere(i==t_arr)[0][0]+1
+    #if i >0:
+    Ratio = 1-((ii+1)/(len(t_arr)+1))
+    Resulting_Color = np.multiply((1 - Ratio),blue) + np.array([1,1,1]) * Ratio
+    plt.plot(Grid.xc/1e3, np.transpose(h_sol[:,i].reshape(Grid.Nx,Grid.Ny))[0,:],color=Resulting_Color,linewidth=5,label=r'%0.0f yrs'%(t[i]/yr2s))
+plt.ylabel(r'$h$ [m]')
+plt.xlabel(r'$x$ [m]')
+plt.tight_layout()
+plt.legend(loc='best',ncol=2)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+
+
+
+
+plt.figure(figsize=(8,6),dpi=100)
+t_arr = (np.array([0, 10, 50, 100])).astype(int)
+#for i in np.linspace(0,np.shape(h_sol)[1]-1,Num).round().astype(int):
+for ii in [-1]:
+    #for i in t_arr:
+    #ii = np.argwhere(i==t_arr)[0][0]+1
+    plt.contourf(Xc/1e3,Yc/1e3, np.transpose(h_sol[:,ii].reshape(Grid.Nx,Grid.Ny))) #,label=r'%0.0f yrs'%(t[i]/yr2s)
+plt.ylabel(r'$y$ [m]')
+plt.xlabel(r'$x$ [m]')
+plt.colorbar()
+plt.tight_layout()
+plt.axis('scaled')
+plt.legend(loc='best',ncol=2)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old_contour.pdf',bbox_inches='tight', dpi = 600)
+
+
+
+'''
+#New Contour plot
+fps = 100000 # frame per sec
+#frn = endstop # frame number of the animation
+[N,frn] = np.shape(h_sol) # frame number of the animation from the saved file
+tyear = t/yr2s
+def update_plot(frame_number, zarray, plot,t):
+    plt.xlabel(r'$x$ [km]')
+    plt.ylabel(r'$y$ [km]')
+    #plt.xlim([Grid.xmin, Grid.xmax/1e3])
+    #plt.ylim([0, np.max(h_sol)])
+    plot[0] = plt.contourf(Xc/1e3,Yc/1e3, np.transpose(h_sol[:,frame_number].reshape(Grid.Nx,Grid.Ny)),vmin=np.min(h_sol),vmax=np.max(h_sol),levels=100)
+    plt.title("t= %0.2f years" % tyear[frame_number],loc = 'center', fontsize=18)
+    plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+    plt.axis('scaled')
+    #plt.clim(np.min(h_sol),np.max(h_sol))
+
+
+fig = plt.figure(figsize=(10,10) , dpi=100)
+plt.xlabel(r'$x$ [km]')
+plt.ylabel(r'$y$ [m]')
+#plt.xlim([Grid.xmin, Grid.xmax/1e3])
+#plt.ylim([0, np.max(h_sol)])
+plot = [plt.contourf(Xc/1e3,Yc/1e3, np.transpose(h_sol[:,-1].reshape(Grid.Nx,Grid.Ny)),vmin=np.min(h_sol),vmax=np.max(h_sol),levels=100) ]
+plt.title("t= %0.2f years" % tyear[0],loc = 'center', fontsize=18)
+plt.axis('scaled')
+plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
+
+mm = plt.cm.ScalarMappable(cmap=cm.Blues)
+mm.set_array(h_sol)
+mm.set_clim(np.min(h_sol),np.max(h_sol))
+clb = plt.colorbar()#mm, pad=0.1)
+clb.set_label(r'$h$ [m]', labelpad=-3,x=-3, y=1.08, rotation=0)
+
+plot = [plt.contourf(Xc/1e3,Yc/1e3, np.transpose(h_sol[:,0].reshape(Grid.Nx,Grid.Ny)),vmin=np.min(h_sol),vmax=np.max(h_sol),levels=100) ]
+
+
+
+ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tyear[:]), interval=1/fps)
+ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
+'''
+
+
+
+
+
+'''
+################################################################
+#Analysis script
+################################################################
+
+tyear = t/yr2s
+data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T0C.npz')
+t_0=data['t'] ;h_sol_0 =data['h_sol']; r_max_0 =data['r_max']; h_max_0 =data['h_max']; Vol_0 =data['Vol']
+
+data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-10C.npz')
+t_10=data['t'] ;h_sol_10 =data['h_sol']; r_max_10 =data['r_max']; h_max_10 =data['h_max']; Vol_10 =data['Vol']
+
+data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-20C.npz')
+t_20=data['t'] ;h_sol_20 =data['h_sol']; r_max_20 =data['r_max']; h_max_20 =data['h_max']; Vol_20 =data['Vol']
+
+data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-50C.npz')
+t_50=data['t'] ;h_sol_50 =data['h_sol']; r_max_50 =data['r_max']; h_max_50 =data['h_max']; Vol_50 =data['Vol']
+
+data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-100C.npz')
+t_100=data['t'] ;h_sol_100 =data['h_sol']; r_max_100 =data['r_max']; h_max_100 =data['h_max']; Vol_100 =data['Vol']
+
+
+import pandas as pd
+from scipy.interpolate import interp1d
+# Load the CSV and give names to columns
+file_path = "./cylindrical_betavskappa_ratio.csv"
+df = pd.read_csv(file_path, header=None, names=["beta", "kappa_ratio"])
+
+# Build interpolation function (linear)
+interp_func = interp1d(df["beta"],df["kappa_ratio"], kind="linear", fill_value="extrapolate")
+
+# Example: evaluate interpolation on a fine grid
+kappa_smooth = np.linspace(df["beta"].min(), df["beta"].max(), 5000)
+beta_smooth = interp_func(kappa_smooth)
+
+
+TT=[0,-10,-20,-50,-100]
+time_step = 150
+koverk1=[1,0.9751428571428573,0.9502857142857141,0.8757142857142858,0.7514285714285711]
+#beta_arr= [0.333325  , 0.33170557, 0.33003462, 0.32468261, 0.31440889]
+#beta_expt = np.array([np.log(r_max_0[-1]/r_max_0[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_10[-1]/r_max_10[-time_step])/np.log(tyear[-1]/tyear[-time_step]),np.log(r_max_20[-1]/r_max_20[-time_step])/np.log(tyear[-1]/tyear[-time_step]) , np.log(r_max_50[-1]/r_max_50[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_100[-1]/r_max_100[-time_step])/np.log(tyear[-1]/tyear[-time_step])])
+beta_expt = interp_func(koverk1)
+################################################################
+
+
+fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10,8))
+plt.subplot(2,2,1)
+#plt.loglog(tyear,h_max_analy,'r-',linewidth=3)
+plt.plot(tyear,h_max_0,'b-',linewidth=5,label='$0^oC$',color=red,mfc='none',markersize=10)
+plt.plot(tyear,h_max_10,'b-',linewidth=5,label='$-10^oC$',color=brown,mfc='none',markersize=10)
+plt.plot(tyear,h_max_20,'b-',linewidth=5,label='$-20^oC$',color=purple,mfc='none',markersize=10)
+plt.plot(tyear,h_max_50,'b-',linewidth=5,label='$-50^oC$',color=blue,mfc='none',markersize=10)
+plt.plot(tyear,h_max_100,'b-',linewidth=5,label='$-100^oC$',color=green,mfc='none',markersize=10)
+plt.ylabel(r'$h_{max} [m]$')
+#plt.ylim([-0.6,0.05])
+plt.xlabel(r'$t [yr]$')
+plt.legend(loc='best',framealpha=0.0)
+#plt.axis('scaled')
+
+plt.subplot(2,2,2)
+#plt.loglog(tyear,x_max_analy,'r-',linewidth=3)
+plt.plot(tyear,r_max_50,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
+plt.plot(tyear,r_max_50[-1]*(tyear/tyear[-1])**beta_expt[3],'k--',linewidth=2,mfc='none',markersize=10)
+plt.plot(tyear,r_max_10,'b-',linewidth=5,color=brown,mfc='none',markersize=10)
+plt.plot(tyear,r_max_10[-1]*(tyear/tyear[-1])**beta_expt[1],'k--',linewidth=2,mfc='none',markersize=10)
+plt.plot(tyear,r_max_20,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
+plt.plot(tyear,r_max_20[-1]*(tyear/tyear[-1])**beta_expt[2],'k--',linewidth=2,mfc='none',markersize=10)
+plt.plot(tyear,r_max_0,'b-',linewidth=5,color=red,mfc='none',markersize=10)
+plt.plot(tyear,r_max_0[-1]*(tyear/tyear[-1])**beta_expt[0],'k--',linewidth=2,mfc='none',markersize=10)
+plt.plot(tyear,r_max_100,'b-',linewidth=5,color=green,mfc='none',markersize=10)
+plt.plot(tyear,r_max_100[-1]*(tyear/tyear[-1])**beta_expt[4],'k--',linewidth=2,mfc='none',markersize=10)
+plt.xlabel(r'$t [yr]$')
+plt.ylabel(r'$r_{max}$ [m]')
+#manager = plt.get_current_fig_manager()
+#manager.window.showMaximized()
+#clb = fig.colorbar(plot[0], orientation='horizontal',aspect=50, pad=-0.1)
+#clb = fig.colorbar(plot[0], orientation='vertical',aspect=50, pad=-0.1)
+plt.xlabel(r'$t [yr]$')
+#plt.axis('scaled')
+#plt.ylim([-0.1,0.7])
+#plt.legend(loc='best',framealpha=0.0)
+
+#We need to half the volume since we have 2 cells in Grid.dy directions
+plt.subplot(2,2,3)
+Vol = np.sum(h_sol,0)*Grid.dx*Grid.dy*phi0
+#plt.loglog(tyear,x_max_analy,'r-',linewidth=3)
+plt.plot(tyear,Vol_50/2,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
+plt.plot(tyear,Vol_10/2,'b-',linewidth=5,color=brown,mfc='none',markersize=10)
+plt.plot(tyear,Vol_20/2,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
+plt.plot(tyear,Vol_0/2,'b-',linewidth=5,color=red,mfc='none',markersize=10)
+plt.plot(tyear,Vol_100/2,'b-',linewidth=5,color=green,mfc='none',markersize=10)
+plt.xlabel(r'$t [yr]$')
+plt.ylabel(r'$Q_{max} [m^3]$')
+
+plt.subplot(2,2,4)
+Vol = np.sum(h_sol,0)*Grid.dx*phi0*Grid.dy
+plt.plot(kappa_smooth,beta_smooth,'k-',linewidth=5)
+plt.plot(koverk1[0],beta_expt[0],'ro',color=red,markersize=15)
+plt.plot(koverk1[1],beta_expt[1],'ro',color=brown,markersize=15)
+plt.plot(koverk1[2],beta_expt[2],'ro',color=purple,markersize=15)
+plt.plot(koverk1[3],beta_expt[3],'ro',color=blue,markersize=15)
+plt.plot(koverk1[4],beta_expt[4],'ro',color=green,markersize=15)
+plt.xlim([0.6,1.02])
+plt.ylim([0.22,0.25])
+plt.ylabel(r'$\beta$')
+plt.xlabel(r'$\kappa$ / $\kappa_1$')
+
+
+plt.subplots_adjust(wspace=0.5, hspace=0)
+plt.tight_layout()
+plt.savefig(f'../Figures/max_length_height_mound_cold_T{T}C_old2D.pdf',bbox_inches='tight', dpi = 600)
+
+
+
+
+
+plt.figure(figsize=(10,4),dpi=100)
+t_arr = (np.array([0, 50, 500])).astype(int)
+#for i in np.linspace(0,np.shape(h_sol)[1]-1,Num).round().astype(int):
+
+
+for i in t_arr:
+    ii = np.argwhere(i==t_arr)[0][0]+1
+    #if i >0:
+    Ratio = 1-((ii+1)/(len(t_arr)+1))
+    Resulting_Color_blue = np.multiply((1 - Ratio),blue) + np.array([1,1,1]) * Ratio
+    plt.plot(Grid.xc/1e3, np.transpose(h_sol_50[:,i].reshape(Grid.Nx,Grid.Ny))[0,:],color=Resulting_Color_blue,linewidth=5,label=r'-50$^o$C, %0.0f yr'%(t[i]/yr2s))
+for i in t_arr:
+    ii = np.argwhere(i==t_arr)[0][0]+1
+    #if i >0:
+    Ratio = 1-((ii+1)/(len(t_arr)+1))
+    Resulting_Color_red  = np.multiply((1 - Ratio),red) + np.array([1,1,1]) * Ratio
+    plt.plot(Grid.xc/1e3, np.transpose(h_sol_0[:,i].reshape(Grid.Nx,Grid.Ny))[0,:],color=Resulting_Color_red,linewidth=5,linestyle='--',label=r'0$^o$C, %0.0f yr'%(t[i]/yr2s))
+plt.ylabel(r'$h$ [m]')
+plt.xlabel(r'$x$ [m]')
+plt.tight_layout()
+plt.legend(loc='best',ncol=2)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+
+
+'''
+
+#contour plots
+
+tyear = t/yr2s
+data = np.load('vertically-integrated-model-cold-firn-corr_2DVIM_corryes_lx1m_ly10.0m_amp0.1_100by100_T-50C.npz')
+t_50=data['t'] ;h_sol_50 =data['h_sol']; r_max_50 =data['r_max']; h_max_50 =data['h_max']
+data = np.load('vertically-integrated-model-cold-firn-corr_2DVIM_corryes_lx1m_ly10.0m_amp0.1_100by100_T0C.npz')
+t_0=data['t'] ;h_sol_0 =data['h_sol']; r_max_0 =data['r_max']; h_max_0 =data['h_max']
+
+
+import matplotlib.colors as mcolors
+#ii = [0,100,250,500,750,1000]
+ii = [100,100,200,200,300,300]
+# 3x2 contour plots with tight layout and titled colorbar
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(7.2, 10), sharex=True, sharey=True)
+
+# Force values above 3 to saturate at the top color
+norm = mcolors.Normalize(vmin=-2, vmax=1)
+# Define common contour levels
+levels = np.linspace(0,10, 101)
+
+
+import matplotlib.colors as mcolors
+    
+for i, ax in enumerate(axes.flat):
+    if i%2 == 0:
+        c = ax.contourf(
+        Xc/1e3, Yc/1e3,
+        np.transpose((h_sol_0)[:, ii[i]].reshape(Grid.Nx, Grid.Ny)),levels=levels,
+         cmap="Blues", #norm=norm
+        )
+    else:
+        c = ax.contourf(
+        Xc/1e3, Yc/1e3,
+        np.transpose((h_sol_50)[:, ii[i]].reshape(Grid.Nx, Grid.Ny)),levels=levels,
+         cmap="Blues", #norm=norm
+        )
+    
+    ax.set_aspect("equal")
+
+# Add axis labels only on outer edges
+for ax in axes[:, 0]:
+    ax.set_ylabel(r"$y$ [km]")
+for ax in axes[-1, :]:
+    ax.set_xlabel(r"$x$ [km]")
+
+# Tilt x-axis tick labels on bottom row
+for ax in axes[-1, :]:
+    for label in ax.get_xticklabels():
+        label.set_rotation(45)
+        label.set_ha("right")
+
+#plt.tight_layout()
+
+# Shared colorbar with title
+# Shared colorbar with label on top
+ticks = np.linspace(0,10,11)#[-2,-1, 0,1]   # corresponds to 0.01, 0.1, 1, 10
+cbar = fig.colorbar(
+    c, ax=axes.ravel().tolist(),
+    orientation="vertical", fraction=0.025, pad=0.1, ticks=ticks
+)
+
+# Put label on top
+cbar.ax.set_title("h [m]", pad=10)
+
+# Format ticks as powers of 10
+#cbar.ax.set_yticklabels([r"10$^{%s}$" % t for t in ticks])
+
+# Show ticks inside plots but remove labels
+for ax in axes.flat:
+    ax.tick_params(
+        which="both",
+        direction="in",   # ticks inside
+        top=True, right=True,  # ticks on all sides
+    )
+#plt.tight_layout()
+plt.tight_layout()
+
+# Reduce space between plots and colorbar
+plt.subplots_adjust(wspace=0.00, hspace=0.0, right=0.81)  # right leaves room for colorbar
+plt.savefig(
+    f"../Figures/{simulation_name}_max_length_height_mound_cold_T{T}C_old_combined.pdf", dpi=600)
+plt.show()
+
+
+
+
