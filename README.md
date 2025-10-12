@@ -68,9 +68,3 @@ The code includes benchmark cases and plotting routines to reproduce figures fro
 ![3D Aquifer Expansion](./Figures/Aquifer_3D_Expansion.png)
 
 ---
-
-## Acknowledgments
-This research was supported by the **Future Faculty in the Physical Sciences Postdoctoral Fellowship** at Princeton University and **Reed Maxwell’s research grant**.
-
----
-
