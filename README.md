@@ -35,14 +35,8 @@ If you use this code or data, please cite:
 ## Getting Started
 
 ### Quick Usage
-After cloning the repository and installing the required Python libraries, the main scripts can be executed directly:
-
-- `main_vertical_model.m` — Runs the 1D vertically integrated firn aquifer simulation.  
-- `analytical_solution.m` — Computes the analytical solution for constant-volume aquifers.  
-- `compare_analytical_numerical.m` — Validates the numerical model against analytical benchmarks.  
-- `aquifer_3D_expansion.m` — Demonstrates three-dimensional aquifer evolution in heterogeneous firn.  
-
-All figures will be saved automatically in the `\Figures` directory, and output MATLAB data will be stored in the `\Output` folder.
+After cloning the repository and installing the required Python libraries, the main scripts can be executed directly in the `\src\Figure.py`
+All figures will be saved automatically in the `\Figures` directory.
 
 ---
 
@@ -60,10 +54,15 @@ The code includes benchmark cases and plotting routines to reproduce figures fro
 
 ## Example Results
 
-### Analytical vs Numerical Solutions  
-![Analytical vs Numerical](./Figures/Analytical_vs_Numerical.png)
+### Expansion of aquifer in cold firn: Analytical (Ana) vs Numerical (Num) Solutions
+![Analytical vs Numerical](./Figures/Cover_photo/analyticalvsnumerical.png)
+Expansion of an aquifer in a uniform, cold firn outside the aquifer with initial temperature and 70% porosity. (a) Numerical (Num) and analytical (Ana) solutions to the dimensional aquifer height at different times. Evolution of dimensionless (b) maximum height, (c) maximum length, and (d) volume of liquid water in the aquifer, scaled with respect their initial values at time (subscript 0 refers to the initial values). Analytical solutions agree with the numerical solution of the vertically integrated model.
 
-### 3D Aquifer Expansion in Cold Firn  
-![3D Aquifer Expansion](./Figures/Aquifer_3D_Expansion.png)
+### 3D Aquifer Expansion in Cold Firn (left to right) : Aquifer height h (in m)
+https://github.com/user-attachments/assets/b0f84a4b-1fa5-4a86-aa00-97052de8d908
+
+### 3D Aquifer Expansion in Temperate Firn (left to right) 
+https://github.com/user-attachments/assets/e8ee956f-38aa-4aa7-9b67-17adc90ec2da
+
 
 ---
