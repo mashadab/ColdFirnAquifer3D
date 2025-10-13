@@ -11,7 +11,7 @@ Created on Thu Apr 28 12:09:06 2022
 #Date modified: 04/28/2022
 
 import sys
-sys.path.insert(1, '../../solver')
+sys.path.insert(1, '../Solver')
 
 # import personal libraries and class
 from classes import *    

@@ -7,11 +7,11 @@ Created on Thu Apr 28 12:09:06 2022
 """
 
 #Coding the unconfined aquifer with constant porosity in firn
-#Mohammad Afzal Shadabred
+#Mohammad Afzal Shadab
 #Date modified: 04/28/2022
 
 import sys
-sys.path.insert(1, '../../solver')
+sys.path.insert(1, '../Solver')
 
 # import personal libraries and class
 from classes import *    
@@ -129,7 +129,7 @@ for i in range(0,Nt):
     
     time = time+dt
     
-    if (i+1)%(Nt/500)==0:
+    if (i+1)%(Nt/100)==0:
         print(i+1,time/day2s, 'days')
         t = np.append(t,time)
         h_sol = np.hstack([h_sol,h])
@@ -383,25 +383,25 @@ plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.N
 ################################################################
 
 tyear = t/yr2s
-data = np.load('vertically-integrated-model-cold-firn-old_250by2_T0C.npz')
+data = np.load('vertically-integrated-model-cold-firn-old_100by2_T0C.npz')
 t_0=data['t'] ;h_sol_0 =data['h_sol']; r_max_0 =data['r_max']; h_max_0 =data['h_max']; Vol_0 =data['Vol']
 
-data = np.load('vertically-integrated-model-cold-firn-old_250by2_T-10C.npz')
+data = np.load('vertically-integrated-model-cold-firn-old_100by2_T-10C.npz')
 t_10=data['t'] ;h_sol_10 =data['h_sol']; r_max_10 =data['r_max']; h_max_10 =data['h_max']; Vol_10 =data['Vol']
 
-data = np.load('vertically-integrated-model-cold-firn-old_250by2_T-20C.npz')
+data = np.load('vertically-integrated-model-cold-firn-old_100by2_T-20C.npz')
 t_20=data['t'] ;h_sol_20 =data['h_sol']; r_max_20 =data['r_max']; h_max_20 =data['h_max']; Vol_20 =data['Vol']
 
-data = np.load('vertically-integrated-model-cold-firn-old_250by2_T-50C.npz')
+data = np.load('vertically-integrated-model-cold-firn-old_100by2_T-50C.npz')
 t_50=data['t'] ;h_sol_50 =data['h_sol']; r_max_50 =data['r_max']; h_max_50 =data['h_max']; Vol_50 =data['Vol']
 
-data = np.load('vertically-integrated-model-cold-firn-old_250by2_T-100C.npz')
+data = np.load('vertically-integrated-model-cold-firn-old_100by2_T-100C.npz')
 t_100=data['t'] ;h_sol_100 =data['h_sol']; r_max_100 =data['r_max']; h_max_100 =data['h_max']; Vol_100 =data['Vol']
 
 
 
 T=[0,-10,-20,-50,-100]
-time_step = 150
+time_step = 10
 koverk1=[1,0.9751428571428573,0.9502857142857141,0.8757142857142858,0.7514285714285711]
 beta_arr= [0.333325  , 0.33170557, 0.33003462, 0.32468261, 0.31440889]
 beta_expt = np.array([np.log(r_max_0[-1]/r_max_0[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_10[-1]/r_max_10[-time_step])/np.log(tyear[-1]/tyear[-time_step]),np.log(r_max_20[-1]/r_max_20[-time_step])/np.log(tyear[-1]/tyear[-time_step]) , np.log(r_max_50[-1]/r_max_50[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_100[-1]/r_max_100[-time_step])/np.log(tyear[-1]/tyear[-time_step])])
