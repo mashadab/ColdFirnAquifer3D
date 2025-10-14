@@ -11,7 +11,7 @@ Created on Thu Apr 28 12:09:06 2022
 #Date modified: 04/28/2022
 
 import sys
-sys.path.insert(1, '../Solver')
+sys.path.insert(1, '../../solver')
 
 # import personal libraries and class
 from classes import *    
@@ -44,7 +44,7 @@ phi_orig = 0.7  #Porosity of the firn/snow
 ############################################################
 #new code (cold firn aquifer)
 ############################################################
-T  = -100 # Temperature of the aquifer [C]
+T  = -30 # Temperature of the aquifer [C]
 Delta_phi = 0.0058*(1-phi_orig) * (0 -T)  #calculating refrozen water (From Clark et al.,2017)
 phi0 = phi_orig - Delta_phi
 
@@ -465,8 +465,8 @@ t_0=data['t'] ;h_sol_0 =data['h_sol']; r_max_0 =data['r_max']; h_max_0 =data['h_
 data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-10C.npz')
 t_10=data['t'] ;h_sol_10 =data['h_sol']; r_max_10 =data['r_max']; h_max_10 =data['h_max']; Vol_10 =data['Vol']
 
-data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-20C.npz')
-t_20=data['t'] ;h_sol_20 =data['h_sol']; r_max_20 =data['r_max']; h_max_20 =data['h_max']; Vol_20 =data['Vol']
+data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-30C.npz')
+t_30=data['t'] ;h_sol_30 =data['h_sol']; r_max_30 =data['r_max']; h_max_30 =data['h_max']; Vol_30 =data['Vol']
 
 data = np.load('vertically-integrated-model-cold-firn-old_2D_100by100_T-50C.npz')
 t_50=data['t'] ;h_sol_50 =data['h_sol']; r_max_50 =data['r_max']; h_max_50 =data['h_max']; Vol_50 =data['Vol']
@@ -489,11 +489,11 @@ kappa_smooth = np.linspace(df["beta"].min(), df["beta"].max(), 5000)
 beta_smooth = interp_func(kappa_smooth)
 
 
-TT=[0,-10,-20,-50,-100]
+TT=[0,-10,-30,-50,-100]
 time_step = 150
-koverk1=[1,0.9751428571428573,0.9502857142857141,0.8757142857142858,0.7514285714285711]
+koverk1=[1,0.9751428571428573,0.9254285714285713,0.8757142857142858,0.7514285714285711]
 #beta_arr= [0.333325  , 0.33170557, 0.33003462, 0.32468261, 0.31440889]
-#beta_expt = np.array([np.log(r_max_0[-1]/r_max_0[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_10[-1]/r_max_10[-time_step])/np.log(tyear[-1]/tyear[-time_step]),np.log(r_max_20[-1]/r_max_20[-time_step])/np.log(tyear[-1]/tyear[-time_step]) , np.log(r_max_50[-1]/r_max_50[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_100[-1]/r_max_100[-time_step])/np.log(tyear[-1]/tyear[-time_step])])
+#beta_expt = np.array([np.log(r_max_0[-1]/r_max_0[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_10[-1]/r_max_10[-time_step])/np.log(tyear[-1]/tyear[-time_step]),np.log(r_max_30[-1]/r_max_30[-time_step])/np.log(tyear[-1]/tyear[-time_step]) , np.log(r_max_50[-1]/r_max_50[-time_step])/np.log(tyear[-1]/tyear[-time_step]), np.log(r_max_100[-1]/r_max_100[-time_step])/np.log(tyear[-1]/tyear[-time_step])])
 beta_expt = interp_func(koverk1)
 ################################################################
 
@@ -501,11 +501,11 @@ beta_expt = interp_func(koverk1)
 fig, axes = plt.subplots(nrows=2, ncols=2, figsize=(10,8))
 plt.subplot(2,2,1)
 #plt.loglog(tyear,h_max_analy,'r-',linewidth=3)
-plt.plot(tyear,h_max_0,'b-',linewidth=5,label='$0^oC$',color=red,mfc='none',markersize=10)
-plt.plot(tyear,h_max_10,'b-',linewidth=5,label='$-10^oC$',color=brown,mfc='none',markersize=10)
-plt.plot(tyear,h_max_20,'b-',linewidth=5,label='$-20^oC$',color=purple,mfc='none',markersize=10)
-plt.plot(tyear,h_max_50,'b-',linewidth=5,label='$-50^oC$',color=blue,mfc='none',markersize=10)
-plt.plot(tyear,h_max_100,'b-',linewidth=5,label='$-100^oC$',color=green,mfc='none',markersize=10)
+plt.plot(tyear,h_max_0,'b-',linewidth=5,label='$0^o$C',color=red,mfc='none',markersize=10)
+plt.plot(tyear,h_max_10,'b-',linewidth=5,label='$-10^o$C',color=brown,mfc='none',markersize=10)
+plt.plot(tyear,h_max_30,'b-',linewidth=5,label='$-30^o$C',color=purple,mfc='none',markersize=10)
+plt.plot(tyear,h_max_50,'b-',linewidth=5,label='$-50^o$C',color=blue,mfc='none',markersize=10)
+plt.plot(tyear,h_max_100,'b-',linewidth=5,label='$-100^o$C',color=green,mfc='none',markersize=10)
 plt.ylabel(r'$h_{max} [m]$')
 #plt.ylim([-0.6,0.05])
 plt.xlabel(r'$t [yr]$')
@@ -518,8 +518,8 @@ plt.plot(tyear,r_max_50,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
 plt.plot(tyear,r_max_50[-1]*(tyear/tyear[-1])**beta_expt[3],'k--',linewidth=2,mfc='none',markersize=10)
 plt.plot(tyear,r_max_10,'b-',linewidth=5,color=brown,mfc='none',markersize=10)
 plt.plot(tyear,r_max_10[-1]*(tyear/tyear[-1])**beta_expt[1],'k--',linewidth=2,mfc='none',markersize=10)
-plt.plot(tyear,r_max_20,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
-plt.plot(tyear,r_max_20[-1]*(tyear/tyear[-1])**beta_expt[2],'k--',linewidth=2,mfc='none',markersize=10)
+plt.plot(tyear,r_max_30,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
+plt.plot(tyear,r_max_30[-1]*(tyear/tyear[-1])**beta_expt[2],'k--',linewidth=2,mfc='none',markersize=10)
 plt.plot(tyear,r_max_0,'b-',linewidth=5,color=red,mfc='none',markersize=10)
 plt.plot(tyear,r_max_0[-1]*(tyear/tyear[-1])**beta_expt[0],'k--',linewidth=2,mfc='none',markersize=10)
 plt.plot(tyear,r_max_100,'b-',linewidth=5,color=green,mfc='none',markersize=10)
@@ -541,7 +541,7 @@ Vol = np.sum(h_sol,0)*Grid.dx*Grid.dy*phi0
 #plt.loglog(tyear,x_max_analy,'r-',linewidth=3)
 plt.plot(tyear,Vol_50/2,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
 plt.plot(tyear,Vol_10/2,'b-',linewidth=5,color=brown,mfc='none',markersize=10)
-plt.plot(tyear,Vol_20/2,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
+plt.plot(tyear,Vol_30/2,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
 plt.plot(tyear,Vol_0/2,'b-',linewidth=5,color=red,mfc='none',markersize=10)
 plt.plot(tyear,Vol_100/2,'b-',linewidth=5,color=green,mfc='none',markersize=10)
 plt.xlabel(r'$t [yr]$')
@@ -635,14 +635,16 @@ plt.savefig(f'../Figures/max_length_height_mound_cold_T{T}C_old_combined.pdf',bb
 
 
 import matplotlib.colors as mcolors
-ii = [0,0,100,100,500,500]
+ii = [0,0,50,50,500,500]
 # 3x2 contour plots with tight layout and titled colorbar
 fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(7.2, 10), sharex=True, sharey=True)
 
 # Force values above 3 to saturate at the top color
 norm = mcolors.Normalize(vmin=-2, vmax=1)
 # Define common contour levels
-levels = np.linspace(-2, 2, 101)
+levels = np.linspace(-2, 1, 101)
+
+
 
 
 import matplotlib.colors as mcolors
@@ -651,17 +653,23 @@ for i, ax in enumerate(axes.flat):
         c = ax.contourf(
         Xc/1e3, Yc/1e3,
         np.transpose(np.log10(h_sol_0)[:, ii[i]].reshape(Grid.Nx, Grid.Ny)),
-        levels=levels, cmap="Blues", norm=norm
+        levels=levels, cmap="Blues", norm=norm, edgecolor="none", antialiased=False,rasterized=True, linewidths=0, ls=None
         )
+        c.set_edgecolor("face")
     else:
         c = ax.contourf(
         Xc/1e3, Yc/1e3,
-        np.transpose(np.log10(h_sol_50)[:, ii[i]].reshape(Grid.Nx, Grid.Ny)),
-        levels=levels, cmap="Blues", norm=norm
+        np.transpose(np.log10(h_sol_30)[:, ii[i]].reshape(Grid.Nx, Grid.Ny)),
+        levels=levels, cmap="Blues", norm=norm, edgecolor="none", antialiased=False,rasterized=True, linewidths=0, ls=None
         )
+        
+        # This is the fix for the white lines between contour levels
+        c.set_edgecolor("face")
     
     ax.set_aspect("equal")
 
+plt.xticks([0, 0.25,0.5])
+plt.yticks([0, 0.25,0.5])
 # Add axis labels only on outer edges
 for ax in axes[:, 0]:
     ax.set_ylabel(r"$y$ [km]")
@@ -699,13 +707,11 @@ for ax in axes.flat:
     )
 #plt.tight_layout()
 plt.tight_layout()
-
+plt.xlim([0, 0.62])
+plt.ylim([0, 0.62])
 # Reduce space between plots and colorbar
 plt.subplots_adjust(wspace=0.00, hspace=0.0, right=0.81)  # right leaves room for colorbar
+#set(gcf, 'Renderer', 'opengl');
 plt.savefig(
-    f"../Figures/max_length_height_mound_cold_T{T}C_old_combined.pdf", dpi=600)
+    f"../Figures/max_length_height_mound_cold_T{T}C_old_combined.pdf", dpi=600, transparent=True)
 plt.show()
-
-
-
-
