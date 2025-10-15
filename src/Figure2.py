@@ -32,7 +32,6 @@ deg2rad = np.pi/180
 
 ##Problem parameters
 R = 0#0.048/day2s #Recharge (m/s)
-tilt_angle = 0   #angle of the slope (degrees)
 h_top = 10; x_right = 100  #Top and right of the melted firn, to set initial condition (m)
 n = 3       #Power law exponent porosity permeabity relation
 Delta_rho = 1e3 #Density difference between water and gas (kg/m^3) 
@@ -105,11 +104,11 @@ A = flux_upwind(v,Grid) #Same flux always advection due to slopee
 
 ##Operators
 IM = I
-#EX = lambda dt, h: I + dt*S*np.cos(deg2rad*tilt_angle)*D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
-#                     - dt*S*np.sin(deg2rad*tilt_angle)*D@A
+#EX = lambda dt, h: I + dt*S*np.cos(deg2rad*0)*D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+#                     - dt*S*np.sin(deg2rad*0)*D@A
 ##########################################################################################
-EX = lambda dt, h, dhdt_ind: I + dt*np.cos(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
-                               - dt*np.sin(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@A    
+EX = lambda dt, h, dhdt_ind: I + dt*np.cos(deg2rad*0)*S_func(dhdt_ind)@D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+                               - dt*np.sin(deg2rad*0)*S_func(dhdt_ind)@D@A    
 ##########################################################################################                     
 R  = R*np.ones((Grid.N,1))
 #Kd = S*phi0*sp.eye(Grid.Nf)
@@ -170,20 +169,20 @@ plt.fill_between(Grid.xc/1e3, np.transpose(h_sol[:,-1].reshape(Grid.Nx,Grid.Ny))
 plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
-plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h.pdf',bbox_inches='tight', dpi = 600)
 
 
 #Analytic solution
-if tilt_angle ==0:
+if 0 ==0:
     Q_0  =  h_top*x_right*phi0 #Volume per unit depth of water (but only half is required)
-    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad)
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(0*deg2rad))**(1/3) + S*t*np.sin(0*deg2rad)
 else:    
     Q_0  =  h_top*x_right*phi0/2 #Volume per unit depth of water (but only half is required)
-    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad) +x_right/2
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(0*deg2rad))**(1/3) + S*t*np.sin(0*deg2rad) +x_right/2
 xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
 xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
 f0   =  lambda xi,xi_0: (xi_0**2 - xi**2)/6  #Only for gamma = 0 
-h_func    =  lambda t,xi,phi_0 : (Q_0**2/(S*np.cos(tilt_angle*deg2rad)*t))**(1/3) * f0(xi,xi_0(phi_0))
+h_func    =  lambda t,xi,phi_0 : (Q_0**2/(S*np.cos(0*deg2rad)*t))**(1/3) * f0(xi,xi_0(phi_0))
 
 
 
@@ -215,7 +214,7 @@ plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
 plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
 
-ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -245,7 +244,7 @@ plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
 plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
 
-ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -409,5 +408,5 @@ plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [km]')
 plt.tight_layout()
 plt.legend(loc='best',ncol=3)
-plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C.pdf',bbox_inches='tight', dpi = 600)
 

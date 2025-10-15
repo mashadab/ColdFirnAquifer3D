@@ -32,7 +32,6 @@ deg2rad = np.pi/180
 
 ##Problem parameters
 R = 0#0.048/day2s #Recharge (m/s)
-tilt_angle = 0   #angle of the slope (degrees)
 h_top = 10; x_right = 100  #Top and right of the melted firn, to set initial condition (m)
 n = 3       #Power law exponent porosity permeabity relation
 Delta_rho = 1e3 #Density difference between water and gas (kg/m^3) 
@@ -92,11 +91,11 @@ A = flux_upwind(v,Grid) #Same flux always advection due to slopee
 
 ##Operators
 IM = I
-#EX = lambda dt, h: I + dt*S*np.cos(deg2rad*tilt_angle)*D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
-#                     - dt*S*np.sin(deg2rad*tilt_angle)*D@A
+#EX = lambda dt, h: I + dt*S*np.cos(deg2rad*0)*D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+#                     - dt*S*np.sin(deg2rad*0)*D@A
 ##########################################################################################
-EX = lambda dt, h, dhdt_ind: I + dt*np.cos(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
-                               - dt*np.sin(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@A    
+EX = lambda dt, h, dhdt_ind: I + dt*np.cos(deg2rad*0)*S_func(dhdt_ind)@D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+                               - dt*np.sin(deg2rad*0)*S_func(dhdt_ind)@D@A    
 ##########################################################################################                     
 R  = R*np.ones((Grid.N,1))
 #Kd = S*phi0*sp.eye(Grid.Nf)
@@ -154,20 +153,20 @@ plt.fill_between(Grid.xc/1e3, np.transpose(h_sol[:,-1].reshape(Grid.Nx,Grid.Ny))
 plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
-plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h.pdf',bbox_inches='tight', dpi = 600)
 
 
 #Analytic solution
-if tilt_angle ==0:
+if 0 ==0:
     Q_0  =  h_top*x_right*phi0 #Volume per unit depth of water (but only half is required)
-    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad)
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(0*deg2rad))**(1/3) + S*t*np.sin(0*deg2rad)
 else:    
     Q_0  =  h_top*x_right*phi0/2 #Volume per unit depth of water (but only half is required)
-    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad) +x_right/2
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(0*deg2rad))**(1/3) + S*t*np.sin(0*deg2rad) +x_right/2
 xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
 xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
 f0   =  lambda xi,xi_0: (xi_0**2 - xi**2)/6  #Only for gamma = 0 
-h_func    =  lambda t,xi,phi_0 : (Q_0**2/(S*np.cos(tilt_angle*deg2rad)*t))**(1/3) * f0(xi,xi_0(phi_0))
+h_func    =  lambda t,xi,phi_0 : (Q_0**2/(S*np.cos(0*deg2rad)*t))**(1/3) * f0(xi,xi_0(phi_0))
 
 
 
@@ -199,7 +198,7 @@ plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
 plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
 
-ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -229,7 +228,7 @@ plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
 plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
 
-ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -372,7 +371,7 @@ plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
 plt.legend(loc='best',ncol=3)
-plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
 
 
 
@@ -389,7 +388,7 @@ plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
 plt.legend(loc='best',ncol=2)
-plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
 
 
 
@@ -407,7 +406,7 @@ plt.colorbar()
 plt.tight_layout()
 plt.axis('scaled')
 plt.legend(loc='best',ncol=2)
-plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old_contour.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old_contour.pdf',bbox_inches='tight', dpi = 600)
 
 
 
@@ -446,7 +445,7 @@ clb = plt.colorbar()#mm, pad=0.1)
 clb.set_label(r'$h$ [m]', labelpad=-3,x=-3, y=1.13, rotation=0)
     
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tyear[:]), interval=1/fps)
-ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -503,8 +502,8 @@ plt.subplot(2,2,1)
 #plt.loglog(tyear,h_max_analy,'r-',linewidth=3)
 plt.plot(tyear,h_max_0,'b-',linewidth=5,label='$0^o$C',color=red,mfc='none',markersize=10)
 plt.plot(tyear,h_max_10,'b-',linewidth=5,label='$-10^o$C',color=brown,mfc='none',markersize=10)
-plt.plot(tyear,h_max_30,'b-',linewidth=5,label='$-30^o$C',color=purple,mfc='none',markersize=10)
-plt.plot(tyear,h_max_50,'b-',linewidth=5,label='$-50^o$C',color=blue,mfc='none',markersize=10)
+plt.plot(tyear,h_max_30,'b-',linewidth=5,label='$-30^o$C',color=blue,mfc='none',markersize=10)
+plt.plot(tyear,h_max_50,'b-',linewidth=5,label='$-50^o$C',color=purple,mfc='none',markersize=10)
 plt.plot(tyear,h_max_100,'b-',linewidth=5,label='$-100^o$C',color=green,mfc='none',markersize=10)
 plt.ylabel(r'$h_{max} [m]$')
 #plt.ylim([-0.6,0.05])
@@ -514,11 +513,11 @@ plt.legend(loc='best',framealpha=0.0)
 
 plt.subplot(2,2,2)
 #plt.loglog(tyear,x_max_analy,'r-',linewidth=3)
-plt.plot(tyear,r_max_50,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
+plt.plot(tyear,r_max_50,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
 plt.plot(tyear,r_max_50[-1]*(tyear/tyear[-1])**beta_expt[3],'k--',linewidth=2,mfc='none',markersize=10)
 plt.plot(tyear,r_max_10,'b-',linewidth=5,color=brown,mfc='none',markersize=10)
 plt.plot(tyear,r_max_10[-1]*(tyear/tyear[-1])**beta_expt[1],'k--',linewidth=2,mfc='none',markersize=10)
-plt.plot(tyear,r_max_30,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
+plt.plot(tyear,r_max_30,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
 plt.plot(tyear,r_max_30[-1]*(tyear/tyear[-1])**beta_expt[2],'k--',linewidth=2,mfc='none',markersize=10)
 plt.plot(tyear,r_max_0,'b-',linewidth=5,color=red,mfc='none',markersize=10)
 plt.plot(tyear,r_max_0[-1]*(tyear/tyear[-1])**beta_expt[0],'k--',linewidth=2,mfc='none',markersize=10)
@@ -539,21 +538,21 @@ plt.xlabel(r'$t [yr]$')
 plt.subplot(2,2,3)
 Vol = np.sum(h_sol,0)*Grid.dx*Grid.dy*phi0
 #plt.loglog(tyear,x_max_analy,'r-',linewidth=3)
-plt.plot(tyear,Vol_50/2,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
+plt.plot(tyear,Vol_50/2,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
 plt.plot(tyear,Vol_10/2,'b-',linewidth=5,color=brown,mfc='none',markersize=10)
-plt.plot(tyear,Vol_30/2,'b-',linewidth=5,color=purple,mfc='none',markersize=10)
+plt.plot(tyear,Vol_30/2,'b-',linewidth=5,color=blue,mfc='none',markersize=10)
 plt.plot(tyear,Vol_0/2,'b-',linewidth=5,color=red,mfc='none',markersize=10)
 plt.plot(tyear,Vol_100/2,'b-',linewidth=5,color=green,mfc='none',markersize=10)
 plt.xlabel(r'$t [yr]$')
-plt.ylabel(r'$Q_{max} [m^3]$')
+plt.ylabel(r'$Q [m^3]$')
 
 plt.subplot(2,2,4)
 Vol = np.sum(h_sol,0)*Grid.dx*phi0*Grid.dy
-plt.plot(kappa_smooth,beta_smooth,'k-',linewidth=5)
+plt.plot(kappa_smooth,beta_smooth,'k--',linewidth=2.5)
 plt.plot(koverk1[0],beta_expt[0],'ro',color=red,markersize=15)
 plt.plot(koverk1[1],beta_expt[1],'ro',color=brown,markersize=15)
-plt.plot(koverk1[2],beta_expt[2],'ro',color=purple,markersize=15)
-plt.plot(koverk1[3],beta_expt[3],'ro',color=blue,markersize=15)
+plt.plot(koverk1[2],beta_expt[2],'ro',color=blue,markersize=15)
+plt.plot(koverk1[3],beta_expt[3],'ro',color=purple,markersize=15)
 plt.plot(koverk1[4],beta_expt[4],'ro',color=green,markersize=15)
 plt.xlim([0.6,1.02])
 plt.ylim([0.22,0.25])
@@ -590,7 +589,7 @@ plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
 plt.legend(loc='best',ncol=2)
-plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
 
 
 
