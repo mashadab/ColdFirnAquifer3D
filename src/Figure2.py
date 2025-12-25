@@ -34,17 +34,17 @@ deg2rad = np.pi/180
 R = 0#0.048/day2s #Recharge (m/s)
 h_top = 10; x_right = 100  #Top and right of the melted firn, to set initial condition (m)
 n = 3       #Power law exponent porosity permeabity relation
-Delta_rho = 1e3 #Density difference between water and gas (kg/m^3) 
+Delta_rho = 998.775 #Density difference between water and gas (kg/m^3) 
 k0 = 5.6e-11#absolute permeability m^2 in pore space Meyer and Hewitt 2017
 mu = 1e-3   #Viscosity of water (Pa.s)
-g  = 9.808  #Acceleration due to gravity (m/s^2)
+g  = 9.81  #Acceleration due to gravity (m/s^2)
 phi_orig = 0.7  #Porosity of the firn/snow
 
 ############################################################
 #new code (cold firn aquifer)
 ############################################################
 T  = -30 # Temperature of the aquifer [C]
-Delta_phi = 0.0058*(1-phi_orig) * (0 -T)  #calculating refrozen water (From Clark et al.,2017)
+Delta_phi = 0.005790117523609654*(1-phi_orig) * (0 -T)  #calculating refrozen water (From Clark et al.,2017)
 phi0 = phi_orig - Delta_phi
 
 S  = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
@@ -72,6 +72,18 @@ t_init = 1*yr2s  #initial time -- 1 day
 
 h_init = g_solution*AA/t_init**alpha
 r_init = BB*t_init**beta
+
+print(S1)
+#print(Delta_phi)
+print(phi0,Delta_rho,g,k0,mu)
+'''
+print(kappa1)
+print(AA,t_init,alpha)
+
+print(beta, g_solution)
+
+print(t_init, r_init, h_init)
+'''
 
 L = 2.5*r_init   #Length of the glacier (m)
 ############################################################
@@ -162,7 +174,7 @@ for i in range(0,Nt):
 ######################################################################
 #Saving the data
 ######################################################################
-np.savez(f'{simulation_name}_{Grid.Nx}by{Grid.Ny}_T{T}C.npz', t=t,h_sol=h_sol,r_max=r_max,h_max=h_max)
+np.savez(f'{simulation_name}_{Grid.Nx}by{Grid.Ny}_T{T}C.npz', t=t,h_sol=h_sol,r_max=r_max,h_max=h_max, Grid_xmax = Grid.xmax, Grid_Nx = Grid.Nx, Grid_Ny = Grid.Ny, Grid_xc = Grid.xc, Grid_yc = Grid.yc)
 
 plt.figure(figsize=(10,10),dpi=100)
 plt.fill_between(Grid.xc/1e3, np.transpose(h_sol[:,-1].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue, y2=0)
