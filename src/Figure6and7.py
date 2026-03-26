@@ -11,7 +11,7 @@ Created on Thu Apr 28 12:09:06 2022
 #Date modified: 04/28/2022
 
 import sys
-sys.path.insert(1, '../Solver')
+sys.path.insert(1, '../../solver')
 
 # import personal libraries and class
 from classes import *    
@@ -34,6 +34,7 @@ deg2rad = np.pi/180
 
 ##Problem parameters
 R = 0#0.048/day2s #Recharge (m/s)
+tilt_angle = 0   #angle of the slope (degrees)
 h_top = 10; x_right = 100  #Top and right of the melted firn, to set initial condition (m)
 n = 3       #Power law exponent porosity permeabity relation
 Delta_rho = 1e3 #Density difference between water and gas (kg/m^3) 
@@ -103,7 +104,7 @@ if corr_rnd_field == 'yes':
     
     #Plot porosity
     fig = plt.figure(figsize=(8,6),dpi=200)
-    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(phi_array.reshape(Grid.Ny,Grid.Nx)),cmap="Greys_r",levels=100,edgecolor="none", antialiased=False,rasterized=True, linewidths=0, ls=None)]
+    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(phi_array.reshape(Grid.Ny,Grid.Nx)),cmap="Greys_r",levels=100, antialiased=False,rasterized=True, linewidths=0, ls=None,edgecolor="face")]
     plt.xlabel(r'$x$ [km]')
     plt.ylabel(r'$y$ [km]')
     plt.xlim([Grid.xmin/1e3, Grid.xmax/1e3])
@@ -121,7 +122,7 @@ if corr_rnd_field == 'yes':
     #temperature
     T_array = (T + (T - T_right)/(Grid.xmin - Grid.xmax)*Xc_col) #Temperature array
     fig = plt.figure(figsize=(8,6),dpi=200)
-    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(T_array.reshape(Grid.Ny,Grid.Nx)),cmap="Reds_r",levels=100,edgecolor="none", antialiased=False,rasterized=True, linewidths=0, ls=None)]
+    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(T_array.reshape(Grid.Ny,Grid.Nx)),cmap="Reds",levels=100, antialiased=False,rasterized=True, linewidths=0, ls=None,edgecolor="face")]
     plt.xlabel(r'$x$ [km]')
     plt.ylabel(r'$y$ [km]')
     
@@ -139,11 +140,14 @@ if corr_rnd_field == 'yes':
         
 
     #Plot porosity reduction
-    Delta_phi = 0.0058*(1-phi_array) * (0 -T_array)  #calculating refrozen water (From Clark et al.,2017)
-    phi0 = phi_array - Delta_phi
+    Delta_theta = 0.005790117523609654*(1-phi_array) * (0 -T_array)  #calculating refrozen water (From Clark et al.,2017)    
+    Delta_phi   = Delta_theta*1000/917#calculating refrozen porosity
+    phi0 = phi_orig - Delta_phi
+
+
 
     fig = plt.figure(figsize=(8,6),dpi=200)
-    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(Delta_phi.reshape(Grid.Ny,Grid.Nx)),cmap="Greys",levels=100,edgecolor="none", antialiased=False,rasterized=True, linewidths=0, ls=None)]
+    plot = [plt.contourf(Xc/1e3, Yc/1e3, np.transpose(Delta_phi.reshape(Grid.Ny,Grid.Nx)),cmap="Greys",levels=100, antialiased=False,rasterized=True, linewidths=0, ls=None,edgecolor="face")]
     plt.xlabel(r'$x$ [km]')
     plt.ylabel(r'$y$ [km]')
     plt.xlim([Grid.xmin/1e3, Grid.xmax/1e3])
@@ -167,7 +171,7 @@ if corr_rnd_field == 'yes':
 
 S  = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
 S1 = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
-S2 = phi0**(n)*Delta_rho*g*k0/(mu*(phi0+Delta_phi))  #Constant in constant porosity model (Huppert and Woods, 1994)
+S2 = phi0**(n)*Delta_rho*g*k0/(mu*(phi0+Delta_theta))  #Constant in constant porosity model (Huppert and Woods, 1994)
 
 
 kappabykappa1 = S2/S1 #the kappa ratio
@@ -182,11 +186,11 @@ def S_func(dhdt):
 
 ##Operators
 IM = I
-#EX = lambda dt, h: I + dt*S*np.cos(deg2rad*0)*D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
-#                     - dt*S*np.sin(deg2rad*0)*D@A
+#EX = lambda dt, h: I + dt*S*np.cos(deg2rad*tilt_angle)*D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+#                     - dt*S*np.sin(deg2rad*tilt_angle)*D@A
 ##########################################################################################
-EX = lambda dt, h, dhdt_ind: I + dt*np.cos(deg2rad*0)*S_func(dhdt_ind)@D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
-                               - dt*np.sin(deg2rad*0)*S_func(dhdt_ind)@D@A    
+EX = lambda dt, h, dhdt_ind: I + dt*np.cos(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@(spdiags(np.transpose(M@h), [0], Grid.Nf, Grid.Nf))@G \
+                               - dt*np.sin(deg2rad*tilt_angle)*S_func(dhdt_ind)@D@A    
 ##########################################################################################                     
 R  = R*np.ones((Grid.N,1))
 #Kd = S*phi0*sp.eye(Grid.Nf)
@@ -244,20 +248,20 @@ plt.fill_between(Grid.xc/1e3, np.transpose(h_sol[:,-1].reshape(Grid.Nx,Grid.Ny))
 plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
-plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h.pdf',bbox_inches='tight', dpi = 600)
 
 
 #Analytic solution
-if 0 ==0:
+if tilt_angle ==0:
     Q_0  =  h_top*x_right*phi0 #Volume per unit depth of water (but only half is required)
-    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(0*deg2rad))**(1/3) + S*t*np.sin(0*deg2rad)
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad)
 else:    
     Q_0  =  h_top*x_right*phi0/2 #Volume per unit depth of water (but only half is required)
-    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(0*deg2rad))**(1/3) + S*t*np.sin(0*deg2rad) +x_right/2
+    x    =  lambda t,xi: xi*(Q_0*S*t*np.cos(tilt_angle*deg2rad))**(1/3) + S*t*np.sin(tilt_angle*deg2rad) +x_right/2
 xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
 xi_0 =  lambda phi_0: (9/phi_0)**(1/3)
 f0   =  lambda xi,xi_0: (xi_0**2 - xi**2)/6  #Only for gamma = 0 
-h_func    =  lambda t,xi,phi_0 : (Q_0**2/(S*np.cos(0*deg2rad)*t))**(1/3) * f0(xi,xi_0(phi_0))
+h_func    =  lambda t,xi,phi_0 : (Q_0**2/(S*np.cos(tilt_angle*deg2rad)*t))**(1/3) * f0(xi,xi_0(phi_0))
 
 
 
@@ -289,7 +293,7 @@ plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
 plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
 
-ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -319,7 +323,7 @@ plt.title("t= %0.2f days" % tday[0],loc = 'center', fontsize=18)
 plt.tight_layout(pad=0.4, w_pad=0.5, h_pad=1.0)
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tday[:]), interval=1/fps)
 
-ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -462,7 +466,7 @@ plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
 plt.legend(loc='best',ncol=3)
-plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
 
 
 
@@ -479,7 +483,7 @@ plt.ylabel(r'$h$ [m]')
 plt.xlabel(r'$x$ [m]')
 plt.tight_layout()
 plt.legend(loc='best',ncol=2)
-plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old.pdf',bbox_inches='tight', dpi = 600)
 
 
 
@@ -497,7 +501,7 @@ plt.colorbar()
 plt.tight_layout()
 plt.axis('scaled')
 plt.legend(loc='best',ncol=2)
-plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old_contour.pdf',bbox_inches='tight', dpi = 600)
+plt.savefig(f'../Figures/{simulation_name}_{tilt_angle}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C_old_contour.pdf',bbox_inches='tight', dpi = 600)
 
 
 
@@ -540,7 +544,7 @@ plot = [plt.contourf(Xc/1e3,Yc/1e3, np.transpose(h_sol[:,0].reshape(Grid.Nx,Grid
 
 
 ani = animation.FuncAnimation(fig, update_plot, frn, fargs=(h_sol[:,:], plot[:],tyear[:]), interval=1/fps)
-ani.save(f"../Figures/{simulation_name}_{0}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
+ani.save(f"../Figures/{simulation_name}_{tilt_angle}degree__tf{t[frn-1]}T_{T}C.mov", writer='ffmpeg', fps=30)
 '''
 
 
@@ -561,7 +565,7 @@ import matplotlib.colors as mcolors
 #ii = [0,100,250,500,750,1000]
 ii = [50,50,125,125,250,250]
 # 3x2 contour plots with tight layout and titled colorbar
-fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(7.2, 10), sharex=True, sharey=True)
+fig, axes = plt.subplots(nrows=3, ncols=2, figsize=(8, 10), sharex=True, sharey=True)
 
 # Force values above 3 to saturate at the top color
 norm = mcolors.Normalize(vmin=-1, vmax=10)
@@ -597,12 +601,6 @@ for ax in axes[:, 0]:
 for ax in axes[-1, :]:
     ax.set_xlabel(r"$x$ [km]")
 
-# Tilt x-axis tick labels on bottom row
-for ax in axes[-1, :]:
-    for label in ax.get_xticklabels():
-        label.set_rotation(45)
-        label.set_ha("right")
-
 #plt.tight_layout()
 
 # Shared colorbar with title
@@ -634,3 +632,78 @@ plt.subplots_adjust(wspace=0.00, hspace=0.0, right=0.81)  # right leaves room fo
 plt.savefig(
     f"../Figures/{simulation_name}_max_length_height_mound_cold_T{T}C_old_combined.pdf", dpi=600, transparent=True)
 plt.show()
+
+
+
+# ============================================================
+# Determine global color limits (so both share same scale)
+# ============================================================
+vmin = min(np.nanmin(h_sol_0), np.nanmin(h_sol_30))
+vmax = max(np.nanmax(h_sol_0), np.nanmax(h_sol_30))
+levels = 100
+cmap = cm.Blues
+tyear_new=t_0/yr2s
+# ============================================================
+# Setup figure and axes
+# ============================================================
+fig, axes = plt.subplots(1, 2, figsize=(10, 6), dpi=100, sharex=True, sharey=True)
+plt.subplots_adjust(wspace=0.05, hspace=0.05)
+
+for ax in axes:
+    ax.set_xlabel(r"$x$ [km]")
+axes[0].set_ylabel(r"$y$ [km]")
+axes[0].set_title("Temperate (0°C)")
+axes[1].set_title("Cold firn")
+
+# Initial frames
+plot0 = axes[0].contourf(Xc / 1e3, Yc / 1e3,
+                         np.transpose(h_sol_0[:, 0].reshape(Grid.Nx, Grid.Ny)),
+                         levels=levels, cmap=cmap, vmin=vmin, vmax=vmax)
+plot30 = axes[1].contourf(Xc / 1e3, Yc / 1e3,
+                          np.transpose(h_sol_30[:, 0].reshape(Grid.Nx, Grid.Ny)),
+                          levels=levels, cmap=cmap, vmin=vmin, vmax=vmax)
+
+# Colorbar (shared)
+mm = plt.cm.ScalarMappable(cmap=cmap, norm=mcolors.Normalize(vmin=vmin, vmax=vmax))
+mm.set_array([])
+cbar = fig.colorbar(mm, ax=axes.ravel().tolist(), fraction=0.046, pad=0.04)
+cbar.set_label(r"Height [m] ", labelpad=-2, x=-4, y=1.08, rotation=0)
+
+# ============================================================
+# Animation update function
+# ============================================================
+def update_plot(frame_number, h0, h30, plots, t):
+    # clear existing contours
+    for coll in axes[0].collections + axes[1].collections:
+        coll.remove()
+
+    # new contourf for each frame
+    plots[0] = axes[0].contourf(Xc / 1e3, Yc / 1e3,
+                                np.transpose(h0[:, frame_number].reshape(Grid.Nx, Grid.Ny)),
+                                levels=levels, cmap=cmap, vmin=vmin, vmax=vmax)
+    plots[1] = axes[1].contourf(Xc / 1e3, Yc / 1e3,
+                                np.transpose(h30[:, frame_number].reshape(Grid.Nx, Grid.Ny)),
+                                levels=levels, cmap=cmap, vmin=vmin, vmax=vmax)
+
+    # shared title with time
+    fig.suptitle(f"t = {tyear_new[frame_number]:.2f} years", fontsize=20)
+    return plots
+
+# ============================================================
+# Create and save animation
+# ============================================================
+fps = 30
+frn = min(h_sol_0.shape[1], h_sol_30.shape[1])  # frame count = shortest simulation
+plots = [plot0, plot30]
+
+
+ani = animation.FuncAnimation(
+    fig, update_plot, frn,
+    fargs=(h_sol_0, h_sol_30, plots, tyear),
+    interval=1000 / fps, blit=False
+)
+
+ani.save("side_by_side_Blues.mov", writer="ffmpeg", fps=fps, dpi=300)
+plt.close(fig)
+print("✅ Saved animation as side_by_side_Blues.mov")
+

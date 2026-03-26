@@ -44,17 +44,20 @@ phi_orig = 0.7  #Porosity of the firn/snow
 #new code (cold firn aquifer)
 ############################################################
 T  = -30 # Temperature of the aquifer [C]
-Delta_phi = 0.0058*(1-phi_orig) * (0 -T)  #calculating refrozen water (From Clark et al.,2017)
+Delta_theta = 0.005790117523609654*(1-phi_orig) * (0 -T)  #calculating refrozen water (From Clark et al.,2017)
+Delta_phi   = Delta_theta*1000/917#calculating refrozen water (From Clark et al.,2017)
 phi0 = phi_orig - Delta_phi
 
 S  = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
 S1 = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
-S2 = phi0**(n)*Delta_rho*g*k0/(mu*(phi0+Delta_phi))  #Constant in constant porosity model (Huppert and Woods, 1994)
-Nt = 100000    #Total number of time steps
+S2 = phi0**(n)*Delta_rho*g*k0/(mu*(phi0+Delta_theta))  #Constant in constant porosity model (Huppert and Woods, 1994)
+Nt = 200000    #Total number of time steps
 dt = tmax/Nt #Length of time step (s)
 kappabykappa1 = S2/S1 #the kappa ratio
 
+print('Delta phi = ',Delta_phi,Delta_theta)
 print('The kappa ratio is kappa/kappa1 = ',kappabykappa1)
+
 
 def S_func(dhdt):
     S = (1-np.heaviside(dhdt,0))*S1 + np.heaviside(dhdt,0)*S2

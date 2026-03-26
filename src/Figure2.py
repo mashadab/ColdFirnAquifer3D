@@ -10,6 +10,10 @@ Created on Thu Apr 28 12:09:06 2022
 #Mohammad Afzal Shadabred
 #Date modified: 04/28/2022
 
+import time as time_contour
+
+start_time = time_contour.perf_counter()
+
 import sys
 sys.path.insert(1, '../Solver')
 
@@ -26,7 +30,7 @@ from flux_upwindfun2D_optimized import flux_upwind
 from Barenblatt_cartesian import Barenblatt_cartesian
 
 ##Simulation parameters
-simulation_name ='vertically-integrated-model-cold-firn'
+simulation_name ='test_vertically-integrated-model-cold-firn'
 tmax = 10*365.25*day2s #10 years max #Maximum time (s)
 deg2rad = np.pi/180
 
@@ -44,17 +48,21 @@ phi_orig = 0.7  #Porosity of the firn/snow
 #new code (cold firn aquifer)
 ############################################################
 T  = -30 # Temperature of the aquifer [C]
-Delta_phi = 0.005790117523609654*(1-phi_orig) * (0 -T)  #calculating refrozen water (From Clark et al.,2017)
+Delta_theta = 0.005790117523609654*(1-phi_orig) * (0 -T)  #calculating refrozen water (From Clark et al.,2017)
+Delta_phi   = Delta_theta*1000/917#calculating refrozen water (From Clark et al.,2017)
 phi0 = phi_orig - Delta_phi
 
 S  = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
 S1 = phi0**(n-1)*Delta_rho*g*k0/mu  #Constant in constant porosity model (Huppert and Woods, 1994)
-S2 = phi0**(n)*Delta_rho*g*k0/(mu*(phi0+Delta_phi))  #Constant in constant porosity model (Huppert and Woods, 1994)
+S2 = phi0**(n)*Delta_rho*g*k0/(mu*(phi0+Delta_theta))  #Constant in constant porosity model (Huppert and Woods, 1994)
 Nt = 200000    #Total number of time steps
 dt = tmax/Nt #Length of time step (s)
 kappabykappa1 = S2/S1 #the kappa ratio
 
+print('Delta phi = ',Delta_phi,Delta_theta)
 print('The kappa ratio is kappa/kappa1 = ',kappabykappa1)
+
+
 
 def S_func(dhdt):
     S = (1-np.heaviside(dhdt,0))*S1 + np.heaviside(dhdt,0)*S2
@@ -169,6 +177,14 @@ for i in range(0,Nt):
         r_max = np.append(r_max,np.max(Grid.xc[arr[:,0]]))
         h_max = np.append(h_max,np.max(h))                       
         ##########################################################################################  
+
+
+
+end_time = time_contour.perf_counter()
+
+elapsed_time = end_time - start_time
+
+print(f"Elapsed time: {elapsed_time:.4f} seconds")
 
 
 ######################################################################
@@ -421,4 +437,24 @@ plt.xlabel(r'$x$ [km]')
 plt.tight_layout()
 plt.legend(loc='best',ncol=3)
 plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C.pdf',bbox_inches='tight', dpi = 600)
+
+
+
+
+
+plt.figure(figsize=(12,4),dpi=100)
+Num = 11
+for i in np.linspace(0,np.shape(h_sol)[1]-1,Num).round().astype(int):
+    if i >=0:
+        plt.plot(Grid.xc/1e3, np.transpose(h_sol[:,i].reshape(Grid.Nx,Grid.Ny))[0,:],color=blue,linewidth=5,alpha=((i+10)/(np.shape(h_sol)[1]-1+20)),label=r'%0.1f yrs'%(t[i]/yr2s))
+        #analytic solution
+        h_analy = h_init*(t_init/t[i])**alpha
+        x_analy = np.linspace(0,r_init,len(h_init))*(t[i]/t_init)**beta
+        plt.plot(x_analy/1e3, h_analy,'k--',linewidth=5,alpha=((i+10)/(np.shape(h_sol)[1]-1+20)))
+plt.ylabel(r'$h$ [m]')
+plt.xlabel(r'$x$ [km]')
+plt.tight_layout()
+plt.legend(loc='best',ncol=3)
+plt.savefig(f'../Figures/{simulation_name}_{0}degree_{Grid.Nx}by{Grid.Ny}_t{t[-1]}_h_combined_T{T}C.pdf',bbox_inches='tight', dpi = 600)
+
 
